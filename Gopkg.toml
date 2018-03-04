@@ -24,3 +24,8 @@
 [[constraint]]
   name = "k8s.io/client-go"
   version = "6.0.0"
+
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  # This is the version required by k8s.io/client-go v6.0.0
+  version = "9.1.0"
