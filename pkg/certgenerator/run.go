@@ -86,6 +86,7 @@ func Run(c *Config) error {
 		}
 	}
 
+	glog.Infof("Run complete")
 	return nil
 }
 
