@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"strings"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,16 +43,13 @@ func CreateSecret(client *kubernetes.Clientset, secret *v1.Secret) (*v1.Secret, 
 }
 
 func getSecretIfExists(client *kubernetes.Clientset, namespace string, name string) (*v1.Secret, error) {
-	listOpts := metav1.ListOptions{}
-	cmList, err := client.CoreV1().Secrets(namespace).List(listOpts)
+	getOpts := metav1.GetOptions{}
+	secret, err := client.CoreV1().Secrets(namespace).Get(name, getOpts)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't list secrets: %v", err)
-	}
-
-	for _, cm := range cmList.Items {
-		if cm.Name == name {
-			return &cm, nil
+		if strings.Contains(err.Error(), "not found") {
+			return nil, nil
 		}
+		return nil, fmt.Errorf("couldn't get secrets: %v", err)
 	}
-	return nil, nil
+	return secret, nil
 }

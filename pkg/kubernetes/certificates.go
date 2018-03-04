@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"strings"
 
 	certsv1beta1 "k8s.io/api/certificates/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -84,16 +85,13 @@ func IsCSRApproved(csr *certsv1beta1.CertificateSigningRequest) bool {
 }
 
 func getCSRIfExists(client *kubernetes.Clientset, name string) (*certsv1beta1.CertificateSigningRequest, error) {
-	listOpts := metav1.ListOptions{}
-	csrList, err := client.CertificatesV1beta1().CertificateSigningRequests().List(listOpts)
+	getOpts := metav1.GetOptions{}
+	csr, err := client.CertificatesV1beta1().CertificateSigningRequests().Get(name, getOpts)
 	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("couldn't list CSRs: %v", err)
 	}
-
-	for _, csr := range csrList.Items {
-		if csr.Name == name {
-			return &csr, nil
-		}
-	}
-	return nil, nil
+	return csr, nil
 }

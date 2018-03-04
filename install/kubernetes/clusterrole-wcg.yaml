@@ -9,11 +9,13 @@ rules:
       - certificatesigningrequests
       # Uncomment for auto approval of CSRs
       # - certificatesigningrequests/approval
+    # Restrict access to just the CSRs the certificate generator creates
+    #resourceNames:
+    #  - ${service-name}.${service-namespace}
     verbs:
       - create
       - update
       - get
-      - list
 
   # If you want to allow the service account to work across multiple namespaces,
   # Uncomment the following or create the role and rolebindg across each namespace
@@ -25,7 +27,6 @@ rules:
   #    - create
   #    - update
   #    - get
-  #    - list
 
 
   # Delete everything below this line if you aren't auto patching webhook configurations
@@ -38,7 +39,11 @@ rules:
       - admissionregistration.k8s.io
     resources:
       - mutatingwebhookconfigurations
-      - validatingWebhookconfigurations
+      - validatingwebhookconfigurations
+    # Restrict access to just the webhook configurations named
+    #resourceNames:
+    #  - ${mutatingwebhookconfiguration-name}
+    #  - ${validatingwebhookconfiguration-name}
     verbs:
       - update
       - get
