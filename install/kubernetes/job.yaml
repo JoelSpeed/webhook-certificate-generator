@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${app-name}-webhook-certificate-generator
+  namespace: kube-system
+  labels:
+    app: ${app-name}
+    component: certificate-generator
+spec:
+  template:
+    metadata:
+      labels:
+        app: ${app-name}
+        component: certificate-generator
+    spec:
+      serviceAccountName: certificate-generator
+      containers:
+        - name: webhook-certificate-generator
+          image: quay.io/joelspeed/webhook-certificate-generator
+          imagePullPolicy: Always
+          args:
+            - --service-name=${service-name}
+            - --namespace=${service-namespace}
+            - --secret-name=${secret-name}
+            #- --patch-mutating=${mutatingwebhookconfiguration-name}
+            #- --patch-validating=${validatingwebhookconfiguration-name}
+            #- --auto-approve-csr
+      restartPolicy: OnFailure
