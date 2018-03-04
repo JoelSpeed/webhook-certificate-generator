@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 
@@ -77,16 +76,14 @@ func createCSRPem(secret *v1.Secret, namespace string, serviceName string) ([]by
 
 func getPrivateKey(secret *v1.Secret) (*rsa.PrivateKey, error) {
 	// Load the existing key from the secret
-	if keyPem64, ok := secret.Data["key.pem"]; ok {
-		keyPem, err := base64.StdEncoding.DecodeString(string(keyPem64))
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode secret: %v", err)
+	if keyPem, ok := secret.Data["key.pem"]; ok {
+		if len(keyPem) > 0 {
+			pemBlock, _ := pem.Decode(keyPem)
+			if pemBlock == nil {
+				return nil, fmt.Errorf("failed to decode private key pem")
+			}
+			return x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
 		}
-		pemBlock, _ := pem.Decode(keyPem)
-		if pemBlock == nil {
-			return nil, fmt.Errorf("faileed to decode private key pem: %v", err)
-		}
-		return x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
 	}
 
 	// Generate a new key and put it into the secret
