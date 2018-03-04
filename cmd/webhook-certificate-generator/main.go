@@ -34,6 +34,9 @@ func main() {
 
 	cmd.Flags().BoolVarP(&config.AutoApprove, "auto-approve-csr", "a", false, "Auto approve CSR once created")
 
+	cmd.Flags().StringVar(&config.PatchMutating, "patch-mutating", "", "Name of MutatingWebhookConfiguration to patch CABundle into")
+	cmd.Flags().StringVar(&config.PatchValidating, "patch-validating", "", "Name of ValidatingWebhookConfiguration to patch CABundle into")
+
 	cmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 	cmd.PersistentFlags().Set("logtostderr", "True")
 	flag.CommandLine.Parse([]string{})

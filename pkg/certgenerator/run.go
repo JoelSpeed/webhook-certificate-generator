@@ -70,6 +70,22 @@ func Run(c *Config) error {
 	}
 	glog.Infof("Created secret %s", secret.Name)
 
+	if c.PatchMutating != "" {
+		glog.Infof("Patching Mutating Webhook Configuration %s", c.PatchMutating)
+		err = patchMutating(client, c.PatchMutating, c.Namespace, c.ServiceName)
+		if err != nil {
+			return fmt.Errorf("failed to patch mutating webhook configuration: %v", err)
+		}
+	}
+
+	if c.PatchValidating != "" {
+		glog.Infof("Patching PatchValidating Webhook Configuration %s", c.PatchValidating)
+		err = patchValidating(client, c.PatchValidating, c.Namespace, c.ServiceName)
+		if err != nil {
+			return fmt.Errorf("failed to patch validating webhook configuration: %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -83,6 +99,9 @@ type Config struct {
 	SecretName  string // Secret name to store generated cert in
 
 	AutoApprove bool // Auto Approve CSR
+
+	PatchMutating   string // Name of MutatingWebhookConfiguration to patch CABundle
+	PatchValidating string // Name of ValidatingWebhookConfiguration to patch CABundle
 }
 
 // waitForCSRApproval waits until the CSR has been approved
