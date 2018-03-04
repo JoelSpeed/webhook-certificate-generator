@@ -87,7 +87,7 @@ type Config struct {
 
 // waitForCSRApproval waits until the CSR has been approved
 func waitForCSRApproval(client *kubernetes.Clientset, csrName string) error {
-	return wait.Poll(time.Second*10, time.Minute*10, func() (bool, error) {
+	return wait.PollImmediate(time.Second*10, time.Minute*10, func() (bool, error) {
 		csr, err := wcgkubernetes.GetCSR(client, csrName)
 		if err != nil {
 			return false, fmt.Errorf("couldn't get CSR: %v", err)
@@ -102,7 +102,7 @@ func waitForCSRApproval(client *kubernetes.Clientset, csrName string) error {
 
 // waitForCertificate waits for the certificate to be ready
 func waitForCertificate(client *kubernetes.Clientset, csrName string) error {
-	return wait.Poll(time.Second*10, time.Minute*10, func() (bool, error) {
+	return wait.PollImmediate(time.Second*10, time.Minute*10, func() (bool, error) {
 		csr, err := wcgkubernetes.GetCSR(client, csrName)
 		if err != nil {
 			return false, fmt.Errorf("couldn't get CSR: %v", err)
