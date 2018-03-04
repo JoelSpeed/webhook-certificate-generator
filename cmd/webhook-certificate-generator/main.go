@@ -29,7 +29,7 @@ func main() {
 	cmd.Flags().StringVarP(&config.Kubeconfig, "kubeconfig", "k", "", "Kubeconfig file to use")
 
 	cmd.Flags().StringVarP(&config.Namespace, "namespace", "n", "", "Service Namespace")
-	cmd.Flags().StringVarP(&config.ServiceName, "serivce-name", "s", "", "Service to generate certificate for")
+	cmd.Flags().StringVarP(&config.ServiceName, "service-name", "s", "", "Service to generate certificate for")
 	cmd.Flags().StringVarP(&config.SecretName, "secret-name", "o", "", "Secret name to put certificates in")
 
 	cmd.Flags().BoolVarP(&config.AutoApprove, "auto-approve-csr", "a", false, "Auto approve CSR once created")
