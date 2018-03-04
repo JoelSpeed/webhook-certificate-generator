@@ -30,11 +30,8 @@ func ApproveCSR(client *kubernetes.Clientset, csrName string) (*certsv1beta1.Cer
 	if csr == nil {
 		return nil, fmt.Errorf("no CSR with name %s", csrName)
 	}
-	for _, c := range csr.Status.Conditions {
-		if c.Type == certsv1beta1.CertificateApproved {
-			// Already approved
-			return csr, nil
-		}
+	if IsCSRApproved(csr) {
+		return csr, nil
 	}
 
 	csr.Status.Conditions = append(csr.Status.Conditions,
@@ -47,6 +44,28 @@ func ApproveCSR(client *kubernetes.Clientset, csrName string) (*certsv1beta1.Cer
 	)
 
 	return client.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(csr)
+}
+
+// GetCSR retrieves the named CSR from Kubernetes
+func GetCSR(client *kubernetes.Clientset, csrName string) (*certsv1beta1.CertificateSigningRequest, error) {
+	c, err := getCSRIfExists(client, csrName)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get CSR: %v", err)
+	}
+	if c == nil {
+		return nil, fmt.Errorf("CSR %s not found", csrName)
+	}
+	return c, nil
+}
+
+// IsCSRApproved determines whether the CSR has been approved or not
+func IsCSRApproved(csr *certsv1beta1.CertificateSigningRequest) bool {
+	for _, c := range csr.Status.Conditions {
+		if c.Type == certsv1beta1.CertificateApproved {
+			return true
+		}
+	}
+	return false
 }
 
 func getCSRIfExists(client *kubernetes.Clientset, name string) (*certsv1beta1.CertificateSigningRequest, error) {

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/joelspeed/webhook-certificate-generator/pkg/certgenerator"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +34,12 @@ func main() {
 
 	cmd.Flags().BoolVarP(&config.AutoApprove, "auto-approve-csr", "a", false, "Auto approve CSR once created")
 
+	cmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
+	cmd.PersistentFlags().Set("logtostderr", "True")
+	flag.CommandLine.Parse([]string{})
+
 	if err := cmd.Execute(); err != nil {
+		glog.Flush()
 		os.Exit(1)
 	}
 }
