@@ -18,14 +18,14 @@ import (
 )
 
 // CreateCerificateSigningRequest creates a Kubernetes CSR for the given service
-func CreateCerificateSigningRequest(client *kubernetes.Clientset, namespace string, serviceName string, secretName string) error {
+func CreateCerificateSigningRequest(client *kubernetes.Clientset, namespace string, serviceName string, secretName string) (string, error) {
 	secret, err := wcgkubernetes.GetSecret(client, namespace, secretName)
 	if err != nil {
-		return fmt.Errorf("failed to load secret: %v", err)
+		return "", fmt.Errorf("failed to load secret: %v", err)
 	}
 	csrPem, err := createCSRPem(secret, namespace, serviceName)
 	if err != nil {
-		return fmt.Errorf("failed to create CSR Pem: %v", err)
+		return "", fmt.Errorf("failed to create CSR Pem: %v", err)
 	}
 
 	csr := &certsv1beta1.CertificateSigningRequest{
@@ -43,9 +43,9 @@ func CreateCerificateSigningRequest(client *kubernetes.Clientset, namespace stri
 	}
 	_, err = wcgkubernetes.CreateCSR(client, csr)
 	if err != nil {
-		return fmt.Errorf("failed to create CSR: %v", err)
+		return "", fmt.Errorf("failed to create CSR: %v", err)
 	}
-	return nil
+	return csr.Name, nil
 }
 
 func createCSRPem(secret *v1.Secret, namespace string, serviceName string) ([]byte, error) {

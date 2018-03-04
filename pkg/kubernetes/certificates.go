@@ -21,6 +21,34 @@ func CreateCSR(client *kubernetes.Clientset, csr *certsv1beta1.CertificateSignin
 	return client.CertificatesV1beta1().CertificateSigningRequests().Update(csr)
 }
 
+// ApproveCSR approves the CSR with the given name
+func ApproveCSR(client *kubernetes.Clientset, csrName string) (*certsv1beta1.CertificateSigningRequest, error) {
+	csr, err := getCSRIfExists(client, csrName)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get CSR: %v", err)
+	}
+	if csr == nil {
+		return nil, fmt.Errorf("no CSR with name %s", csrName)
+	}
+	for _, c := range csr.Status.Conditions {
+		if c.Type == certsv1beta1.CertificateApproved {
+			// Already approved
+			return csr, nil
+		}
+	}
+
+	csr.Status.Conditions = append(csr.Status.Conditions,
+		certsv1beta1.CertificateSigningRequestCondition{
+			Type:           certsv1beta1.CertificateApproved,
+			Reason:         "WCGApprove",
+			Message:        "This CSR was approved by webhook certificate generator.",
+			LastUpdateTime: metav1.Now(),
+		},
+	)
+
+	return client.CertificatesV1beta1().CertificateSigningRequests().UpdateApproval(csr)
+}
+
 func getCSRIfExists(client *kubernetes.Clientset, name string) (*certsv1beta1.CertificateSigningRequest, error) {
 	listOpts := metav1.ListOptions{}
 	csrList, err := client.CertificatesV1beta1().CertificateSigningRequests().List(listOpts)
