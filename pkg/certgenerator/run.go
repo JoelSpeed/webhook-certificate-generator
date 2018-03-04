@@ -16,8 +16,15 @@ func Run(c *Config) error {
 	if err != nil {
 		return fmt.Errorf("couldn't create clientset: %v", err)
 	}
+
+	// Fetch the secret from Kubernetes.
+	secret, err := wcgkubernetes.GetSecret(client, c.Namespace, c.SecretName)
+	if err != nil {
+		return fmt.Errorf("failed to fetch secret: %v", err)
+	}
+
 	// Create Kubernetes CSR
-	csrName, err := CreateCerificateSigningRequest(client, c.Namespace, c.ServiceName, c.SecretName)
+	csrName, err := createCerificateSigningRequest(client, secret, c.Namespace, c.ServiceName, c.SecretName)
 	if err != nil {
 		return fmt.Errorf("couldn't create certificate signing request: %v", err)
 	}
@@ -35,12 +42,33 @@ func Run(c *Config) error {
 	} else {
 		// Wait for CSR to be approved
 		glog.Infof("Waiting for CSR approval...")
-		err = waitForCSR(client, csrName)
+		err = waitForCSRApproval(client, csrName)
 		if err != nil {
 			return fmt.Errorf("error waiting for CSR approval: %v", err)
 		}
 		glog.Infof("CSR Approved %s", csrName)
 	}
+
+	// Wait for Certificate to be generated
+	glog.Infof("Waiting for Certificate...")
+	err = waitForCertificate(client, csrName)
+	if err != nil {
+		return fmt.Errorf("error waiting for Certificate: %v", err)
+	}
+
+	certificate, err := wcgkubernetes.GetCertificate(client, csrName)
+	if err != nil {
+		return fmt.Errorf("failed to get certificate: %v", err)
+	}
+	glog.Infof("Fetched Certificate")
+
+	// Update secret
+	secret.Data["cert.pem"] = certificate
+	_, err = wcgkubernetes.CreateSecret(client, secret)
+	if err != nil {
+		return fmt.Errorf("couldn't create secret: %v", err)
+	}
+	glog.Infof("Created secret %s", secret.Name)
 
 	return nil
 }
@@ -57,7 +85,8 @@ type Config struct {
 	AutoApprove bool // Auto Approve CSR
 }
 
-func waitForCSR(client *kubernetes.Clientset, csrName string) error {
+// waitForCSRApproval waits until the CSR has been approved
+func waitForCSRApproval(client *kubernetes.Clientset, csrName string) error {
 	return wait.Poll(time.Second*10, time.Minute*10, func() (bool, error) {
 		csr, err := wcgkubernetes.GetCSR(client, csrName)
 		if err != nil {
@@ -67,6 +96,26 @@ func waitForCSR(client *kubernetes.Clientset, csrName string) error {
 			return true, nil
 		}
 		glog.Infof("Waiting for CSR approval...")
+		return false, nil
+	})
+}
+
+// waitForCertificate waits for the certificate to be ready
+func waitForCertificate(client *kubernetes.Clientset, csrName string) error {
+	return wait.Poll(time.Second*10, time.Minute*10, func() (bool, error) {
+		csr, err := wcgkubernetes.GetCSR(client, csrName)
+		if err != nil {
+			return false, fmt.Errorf("couldn't get CSR: %v", err)
+		}
+		if !wcgkubernetes.IsCSRApproved(csr) {
+			return false, fmt.Errorf("cannot fetch certificate, CSR not approved")
+		}
+
+		if len(csr.Status.Certificate) > 0 {
+			return true, nil
+		}
+
+		glog.Infof("Waiting for Certificate...")
 		return false, nil
 	})
 }

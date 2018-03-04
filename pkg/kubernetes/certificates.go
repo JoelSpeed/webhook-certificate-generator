@@ -58,6 +58,21 @@ func GetCSR(client *kubernetes.Clientset, csrName string) (*certsv1beta1.Certifi
 	return c, nil
 }
 
+// GetCertificate returns the Base64 encoded certificate from the CSR
+func GetCertificate(client *kubernetes.Clientset, csrName string) ([]byte, error) {
+	c, err := getCSRIfExists(client, csrName)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get CSR: %v", err)
+	}
+	if c == nil {
+		return nil, fmt.Errorf("CSR %s not found", csrName)
+	}
+	if len(c.Status.Certificate) == 0 {
+		return nil, fmt.Errorf("Certificate not yet ready")
+	}
+	return c.Status.Certificate, nil
+}
+
 // IsCSRApproved determines whether the CSR has been approved or not
 func IsCSRApproved(csr *certsv1beta1.CertificateSigningRequest) bool {
 	for _, c := range csr.Status.Conditions {

@@ -17,12 +17,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// CreateCerificateSigningRequest creates a Kubernetes CSR for the given service
-func CreateCerificateSigningRequest(client *kubernetes.Clientset, namespace string, serviceName string, secretName string) (string, error) {
-	secret, err := wcgkubernetes.GetSecret(client, namespace, secretName)
-	if err != nil {
-		return "", fmt.Errorf("failed to load secret: %v", err)
-	}
+// createCerificateSigningRequest creates a Kubernetes CSR for the given service
+func createCerificateSigningRequest(client *kubernetes.Clientset, secret *v1.Secret, namespace string, serviceName string, secretName string) (string, error) {
 	csrPem, err := createCSRPem(secret, namespace, serviceName)
 	if err != nil {
 		return "", fmt.Errorf("failed to create CSR Pem: %v", err)
@@ -80,6 +76,7 @@ func createCSRPem(secret *v1.Secret, namespace string, serviceName string) ([]by
 }
 
 func getPrivateKey(secret *v1.Secret) (*rsa.PrivateKey, error) {
+	// Load the existing key from the secret
 	if keyPem64, ok := secret.Data["key.pem"]; ok {
 		keyPem, err := base64.StdEncoding.DecodeString(string(keyPem64))
 		if err != nil {
@@ -91,7 +88,21 @@ func getPrivateKey(secret *v1.Secret) (*rsa.PrivateKey, error) {
 		}
 		return x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
 	}
-	return rsa.GenerateKey(rand.Reader, 2048)
+
+	// Generate a new key and put it into the secret
+	newKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create private key: %v", err)
+	}
+
+	pemBlock := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(newKey),
+	}
+
+	secret.Data["key.pem"] = pem.EncodeToMemory(pemBlock)
+
+	return newKey, nil
 
 }
 
