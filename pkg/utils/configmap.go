@@ -1,4 +1,4 @@
-package kubernetes
+package utils
 
 import (
 	"k8s.io/api/core/v1"

@@ -1,4 +1,4 @@
-package kubernetes
+package utils
 
 import (
 	arv1beta1 "k8s.io/api/admissionregistration/v1beta1"

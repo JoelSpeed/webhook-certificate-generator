@@ -5,20 +5,20 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	wcgkubernetes "github.com/joelspeed/webhook-certificate-generator/pkg/kubernetes"
+	"github.com/joelspeed/webhook-certificate-generator/pkg/utils"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
 
 // Run exectues the main logic of the cert generator
 func Run(c *Config) error {
-	client, err := wcgkubernetes.NewClientset(c.InCluster, c.Kubeconfig)
+	client, err := utils.NewClientset(c.InCluster, c.Kubeconfig)
 	if err != nil {
 		return fmt.Errorf("couldn't create clientset: %v", err)
 	}
 
 	// Fetch the secret from Kubernetes.
-	secret, err := wcgkubernetes.GetSecret(client, c.Namespace, c.SecretName)
+	secret, err := utils.GetSecret(client, c.Namespace, c.SecretName)
 	if err != nil {
 		return fmt.Errorf("failed to fetch secret: %v", err)
 	}
@@ -34,7 +34,7 @@ func Run(c *Config) error {
 	// Approve CSR if AutoApprove enabled
 	if c.AutoApprove {
 		glog.Infof("Approving CSR %s", csrName)
-		_, err = wcgkubernetes.ApproveCSR(client, csrName)
+		_, err = utils.ApproveCSR(client, csrName)
 		if err != nil {
 			return fmt.Errorf("couldn't approve CSR: %v", err)
 		}
@@ -56,7 +56,7 @@ func Run(c *Config) error {
 		return fmt.Errorf("error waiting for Certificate: %v", err)
 	}
 
-	certificate, err := wcgkubernetes.GetCertificate(client, csrName)
+	certificate, err := utils.GetCertificate(client, csrName)
 	if err != nil {
 		return fmt.Errorf("failed to get certificate: %v", err)
 	}
@@ -64,7 +64,7 @@ func Run(c *Config) error {
 
 	// Update secret
 	secret.Data["cert.pem"] = certificate
-	_, err = wcgkubernetes.CreateSecret(client, secret)
+	_, err = utils.CreateSecret(client, secret)
 	if err != nil {
 		return fmt.Errorf("couldn't create secret: %v", err)
 	}
@@ -108,11 +108,11 @@ type Config struct {
 // waitForCSRApproval waits until the CSR has been approved
 func waitForCSRApproval(client *kubernetes.Clientset, csrName string) error {
 	return wait.PollImmediate(time.Second*10, time.Minute*10, func() (bool, error) {
-		csr, err := wcgkubernetes.GetCSR(client, csrName)
+		csr, err := utils.GetCSR(client, csrName)
 		if err != nil {
 			return false, fmt.Errorf("couldn't get CSR: %v", err)
 		}
-		if wcgkubernetes.IsCSRApproved(csr) {
+		if utils.IsCSRApproved(csr) {
 			return true, nil
 		}
 		glog.Infof("Waiting for CSR approval...")
@@ -123,11 +123,11 @@ func waitForCSRApproval(client *kubernetes.Clientset, csrName string) error {
 // waitForCertificate waits for the certificate to be ready
 func waitForCertificate(client *kubernetes.Clientset, csrName string) error {
 	return wait.PollImmediate(time.Second*10, time.Minute*10, func() (bool, error) {
-		csr, err := wcgkubernetes.GetCSR(client, csrName)
+		csr, err := utils.GetCSR(client, csrName)
 		if err != nil {
 			return false, fmt.Errorf("couldn't get CSR: %v", err)
 		}
-		if !wcgkubernetes.IsCSRApproved(csr) {
+		if !utils.IsCSRApproved(csr) {
 			return false, fmt.Errorf("cannot fetch certificate, CSR not approved")
 		}
 

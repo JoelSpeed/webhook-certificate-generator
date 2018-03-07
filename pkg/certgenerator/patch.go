@@ -3,7 +3,7 @@ package certgenerator
 import (
 	"fmt"
 
-	wcgkubernetes "github.com/joelspeed/webhook-certificate-generator/pkg/kubernetes"
+	"github.com/joelspeed/webhook-certificate-generator/pkg/utils"
 	arv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -14,13 +14,13 @@ func patchMutating(client *kubernetes.Clientset, name string, namespace string, 
 		return fmt.Errorf("error retrieving ca bundle: %v", err)
 	}
 
-	mwc, err := wcgkubernetes.GetMutatingWebhookConfiguration(client, name)
+	mwc, err := utils.GetMutatingWebhookConfiguration(client, name)
 	if err != nil {
 		return fmt.Errorf("failed to fetch mutating webhook configuration: %v", err)
 	}
 
 	mwc.Webhooks = patchWebhooks(mwc.Webhooks, caBundle, namespace, service)
-	_, err = wcgkubernetes.UpdateMutatingWebhookConfiguration(client, mwc)
+	_, err = utils.UpdateMutatingWebhookConfiguration(client, mwc)
 	if err != nil {
 		return fmt.Errorf("failed updating mutating webhook configuration: %v", err)
 	}
@@ -33,13 +33,13 @@ func patchValidating(client *kubernetes.Clientset, name string, namespace string
 		return fmt.Errorf("error retrieving ca bundle: %v", err)
 	}
 
-	vwc, err := wcgkubernetes.GetValidatingWebhookConfiguration(client, name)
+	vwc, err := utils.GetValidatingWebhookConfiguration(client, name)
 	if err != nil {
 		return fmt.Errorf("failed to fetch validating webhook configuration: %v", err)
 	}
 
 	vwc.Webhooks = patchWebhooks(vwc.Webhooks, caBundle, namespace, service)
-	_, err = wcgkubernetes.UpdateValidatingWebhookConfiguration(client, vwc)
+	_, err = utils.UpdateValidatingWebhookConfiguration(client, vwc)
 	if err != nil {
 		return fmt.Errorf("failed updating validating webhook configuration: %v", err)
 	}
@@ -47,7 +47,7 @@ func patchValidating(client *kubernetes.Clientset, name string, namespace string
 }
 
 func fetchCABundle(client *kubernetes.Clientset) ([]byte, error) {
-	cm, err := wcgkubernetes.GetConfigMap(client, "kube-system", "extension-apiserver-authentication")
+	cm, err := utils.GetConfigMap(client, "kube-system", "extension-apiserver-authentication")
 	if err != nil {
 		return nil, fmt.Errorf("couldn't retrieve auth configmap: %v", err)
 	}

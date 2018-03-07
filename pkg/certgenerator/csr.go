@@ -9,7 +9,7 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	wcgkubernetes "github.com/joelspeed/webhook-certificate-generator/pkg/kubernetes"
+	"github.com/joelspeed/webhook-certificate-generator/pkg/utils"
 	certsv1beta1 "k8s.io/api/certificates/v1beta1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +36,7 @@ func createCerificateSigningRequest(client *kubernetes.Clientset, secret *v1.Sec
 			},
 		},
 	}
-	_, err = wcgkubernetes.CreateCSR(client, csr)
+	_, err = utils.CreateCSR(client, csr)
 	if err != nil {
 		return "", fmt.Errorf("failed to create CSR: %v", err)
 	}
