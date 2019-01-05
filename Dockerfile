@@ -1,4 +1,4 @@
-FROM golang:1.9 AS builder
+FROM golang:1.11 AS builder
 WORKDIR /go/src/github.com/joelspeed/webhook-certificate-generator
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/wcg github.com/joelspeed/webhook-certificate-generator/cmd/webhook-certificate-generator

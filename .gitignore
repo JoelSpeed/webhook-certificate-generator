@@ -12,3 +12,6 @@
 
 # Vendored Dependencies
 vendor/
+
+# binaries
+wcg

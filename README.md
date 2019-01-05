@@ -17,7 +17,7 @@ wcg --service-name=foo --namespace=bar --secret-name=foo-certs
 ```
 
 This generates a CSR with the name `foo.bar` (`servicename.namespace`) in the
-K8s API and waits for it's approval.
+K8s API and waits for its approval.
 
 Once the CSR is approved, `wcg` waits for the certificate to be signed and then
 creates a secret `foo-certs` with the following format:
@@ -73,6 +73,9 @@ the name of the Webhook configuration (eg `--patch-mutating=foo-webhook`) and
 `wcg` will patch the `caBundle` field with the cluster's CA Bundle once the
 certificate has been issued.
 
+If you are using the [aggregated API server](https://kubernetes.io/blog/2018/01/extensible-admission-is-beta) you
+can also pass an APIService name using `--patch-api-service` to patch the `caBundle` field as previously described. 
+
 ### Flags
 The following flags are configure the certificate generation process.
 `namespace`, `secret-name` and `service-name` are required.
@@ -81,6 +84,7 @@ The following flags are configure the certificate generation process.
       --in-cluster                       Running inside a Kubernetes Cluster (default true)
   -k, --kubeconfig string                Kubeconfig file to use
   -n, --namespace string                 Service Namespace
+      --patch-api-service string         Name of APIService to patch CABundle into
       --patch-mutating string            Name of MutatingWebhookConfiguration to patch CABundle into
       --patch-validating string          Name of ValidatingWebhookConfiguration to patch CABundle into
   -o, --secret-name string               Secret name to put certificates in

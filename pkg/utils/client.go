@@ -8,6 +8,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	aggregatorclient "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 )
 
 // NewClientset creates a kubernetes clientset.
@@ -19,6 +20,17 @@ func NewClientset(inCluster bool, kubeconfig string) (*kubernetes.Clientset, err
 	}
 
 	return kubernetes.NewForConfig(config)
+}
+
+// NewAggregatorClientset creates a kubernetes clientset.
+// Will load config from Pod environment if running in cluster.
+func NewAggregatorClientset(inCluster bool, kubeconfig string) (*aggregatorclient.Clientset, error) {
+	config, err := createConfig(inCluster, kubeconfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %v", err)
+	}
+
+	return aggregatorclient.NewForConfig(config)
 }
 
 func createConfig(inCluster bool, kubeconfig string) (*rest.Config, error) {

@@ -36,6 +36,7 @@ func main() {
 
 	cmd.Flags().StringVar(&config.PatchMutating, "patch-mutating", "", "Name of MutatingWebhookConfiguration to patch CABundle into")
 	cmd.Flags().StringVar(&config.PatchValidating, "patch-validating", "", "Name of ValidatingWebhookConfiguration to patch CABundle into")
+	cmd.Flags().StringVar(&config.PatchApiService, "patch-api-service", "", "Name of APIService to patch CABundle into")
 
 	cmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 	cmd.PersistentFlags().Set("logtostderr", "True")

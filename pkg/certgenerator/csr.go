@@ -16,8 +16,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// createCerificateSigningRequest creates a Kubernetes CSR for the given service
-func createCerificateSigningRequest(client *kubernetes.Clientset, secret *v1.Secret, namespace string, serviceName string, secretName string) (string, error) {
+// createCertificateSigningRequest creates a Kubernetes CSR for the given service
+func createCertificateSigningRequest(client *kubernetes.Clientset, secret *v1.Secret, namespace string, serviceName string, secretName string) (string, error) {
 	csrPem, err := createCSRPem(secret, namespace, serviceName)
 	if err != nil {
 		return "", fmt.Errorf("failed to create CSR Pem: %v", err)

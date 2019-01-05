@@ -17,6 +17,11 @@ func Run(c *Config) error {
 		return fmt.Errorf("couldn't create clientset: %v", err)
 	}
 
+	aggrclient, err := utils.NewAggregatorClientset(c.InCluster, c.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("couldn't create aggregator clientset: %v", err)
+	}
+
 	// Fetch the secret from Kubernetes.
 	secret, err := utils.GetSecret(client, c.Namespace, c.SecretName)
 	if err != nil {
@@ -24,7 +29,7 @@ func Run(c *Config) error {
 	}
 
 	// Create Kubernetes CSR
-	csrName, err := createCerificateSigningRequest(client, secret, c.Namespace, c.ServiceName, c.SecretName)
+	csrName, err := createCertificateSigningRequest(client, secret, c.Namespace, c.ServiceName, c.SecretName)
 	if err != nil {
 		return fmt.Errorf("couldn't create certificate signing request: %v", err)
 	}
@@ -70,17 +75,33 @@ func Run(c *Config) error {
 	}
 	glog.Infof("Created secret %s", secret.Name)
 
+	apiServiceGroup := ""
+	if c.PatchApiService != "" {
+		glog.Infof("Patching APIService Configuration %s", c.PatchApiService)
+
+		svc, err := utils.GetAPIServiceConfiguration(aggrclient, c.PatchApiService)
+		if err != nil {
+			return fmt.Errorf("failed to fetch api service configuration: %v", err)
+		}
+		apiServiceGroup = fmt.Sprintf("/apis/%s/%s", svc.Spec.Group, svc.Spec.Version)
+
+		err = patchAPIService(client, aggrclient, c.PatchApiService)
+		if err != nil {
+			return fmt.Errorf("failed to patch api service configuration: %v", err)
+		}
+	}
+
 	if c.PatchMutating != "" {
 		glog.Infof("Patching Mutating Webhook Configuration %s", c.PatchMutating)
-		err = patchMutating(client, c.PatchMutating, c.Namespace, c.ServiceName)
+		err = patchMutating(client, c.PatchMutating, c.Namespace, c.ServiceName, apiServiceGroup)
 		if err != nil {
 			return fmt.Errorf("failed to patch mutating webhook configuration: %v", err)
 		}
 	}
 
 	if c.PatchValidating != "" {
-		glog.Infof("Patching PatchValidating Webhook Configuration %s", c.PatchValidating)
-		err = patchValidating(client, c.PatchValidating, c.Namespace, c.ServiceName)
+		glog.Infof("Patching Validating Webhook Configuration %s", c.PatchValidating)
+		err = patchValidating(client, c.PatchValidating, c.Namespace, c.ServiceName, apiServiceGroup)
 		if err != nil {
 			return fmt.Errorf("failed to patch validating webhook configuration: %v", err)
 		}
@@ -103,6 +124,7 @@ type Config struct {
 
 	PatchMutating   string // Name of MutatingWebhookConfiguration to patch CABundle
 	PatchValidating string // Name of ValidatingWebhookConfiguration to patch CABundle
+	PatchApiService string // Name of APIService to patch CABundle
 }
 
 // waitForCSRApproval waits until the CSR has been approved
