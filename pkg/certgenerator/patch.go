@@ -19,7 +19,7 @@ func patchMutating(client *kubernetes.Clientset, name string, namespace string, 
 		return fmt.Errorf("failed to fetch mutating webhook configuration: %v", err)
 	}
 
-	mwc.Webhooks = patchWebhooks(mwc.Webhooks, caBundle, namespace, service)
+	mwc.Webhooks = patchMutatingWebhooks(mwc.Webhooks, caBundle, namespace, service)
 	_, err = utils.UpdateMutatingWebhookConfiguration(client, mwc)
 	if err != nil {
 		return fmt.Errorf("failed updating mutating webhook configuration: %v", err)
@@ -38,7 +38,7 @@ func patchValidating(client *kubernetes.Clientset, name string, namespace string
 		return fmt.Errorf("failed to fetch validating webhook configuration: %v", err)
 	}
 
-	vwc.Webhooks = patchWebhooks(vwc.Webhooks, caBundle, namespace, service)
+	vwc.Webhooks = patchValidatingWebhooks(vwc.Webhooks, caBundle, namespace, service)
 	_, err = utils.UpdateValidatingWebhookConfiguration(client, vwc)
 	if err != nil {
 		return fmt.Errorf("failed updating validating webhook configuration: %v", err)
@@ -57,8 +57,19 @@ func fetchCABundle(client *kubernetes.Clientset) ([]byte, error) {
 	return nil, fmt.Errorf("no client-ca-file in configmap")
 }
 
-func patchWebhooks(webhooks []arv1beta1.Webhook, caBundle []byte, namespace string, name string) []arv1beta1.Webhook {
-	outWebhooks := []arv1beta1.Webhook{}
+func patchMutatingWebhooks(webhooks []arv1beta1.MutatingWebhook, caBundle []byte, namespace string, name string) []arv1beta1.MutatingWebhook {
+	outWebhooks := []arv1beta1.MutatingWebhook{}
+	for _, wh := range webhooks {
+		if wh.ClientConfig.Service.Namespace == namespace &&
+			wh.ClientConfig.Service.Name == name {
+			wh.ClientConfig.CABundle = caBundle
+		}
+		outWebhooks = append(outWebhooks, wh)
+	}
+	return outWebhooks
+}
+func patchValidatingWebhooks(webhooks []arv1beta1.ValidatingWebhook, caBundle []byte, namespace string, name string) []arv1beta1.ValidatingWebhook {
+	outWebhooks := []arv1beta1.ValidatingWebhook{}
 	for _, wh := range webhooks {
 		if wh.ClientConfig.Service.Namespace == namespace &&
 			wh.ClientConfig.Service.Name == name {
