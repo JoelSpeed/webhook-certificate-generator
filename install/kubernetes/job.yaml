@@ -16,7 +16,7 @@ spec:
       serviceAccountName: certificate-generator
       containers:
         - name: webhook-certificate-generator
-          image: quay.io/joelspeed/webhook-certificate-generator
+          image: quay.io/joelspeed/webhook-certificate-generator:v0.1.1
           imagePullPolicy: Always
           args:
             - --service-name=${service-name}
